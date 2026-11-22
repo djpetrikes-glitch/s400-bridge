@@ -138,6 +138,7 @@ class MainActivity: ComponentActivity() {
                         Text("Import all available history for the selected profile. Existing records from this installation are matched by stable IDs.")
                         OutlinedButton(onClick = vm::importHistory, enabled = !busy && ready && state.settings.profile != null) { Text("Import existing measurements") }
                         Text(state.status)
+                        if (state.sample.isNotEmpty()) Text("Newest record, numeric values (compare with Xiaomi Home, then tell me which is which):\n" + state.sample.entries.joinToString("\n") { "${it.key} = ${it.value}" }, style = MaterialTheme.typography.bodySmall)
                         if (state.fieldNames.isNotEmpty()) Text("Cloud fields (names only):\n" + state.fieldNames.joinToString("\n"), style = MaterialTheme.typography.bodySmall)
                         Text("Model: ${ScaleParser.MODEL}\nRegion: ${state.settings.region}\nApp: ${BuildConfig.VERSION_NAME}\nAndroid: ${android.os.Build.VERSION.RELEASE}", style = MaterialTheme.typography.bodySmall)
                     }
