@@ -237,7 +237,7 @@ class MainActivity: ComponentActivity() {
         Text("Every measurement, with all its scale fields, is sent to your nutrition sheet on each sync. Stored encrypted on this phone. Health Connect is not affected.", style = MaterialTheme.typography.bodySmall)
         OutlinedTextField(value = url, onValueChange = { url = it }, label = { Text("Web app URL (ends in /exec)") }, singleLine = true, enabled = !busy, modifier = Modifier.fillMaxWidth())
         OutlinedTextField(value = key, onValueChange = { key = it }, label = { Text("Scale key") }, singleLine = true, visualTransformation = PasswordVisualTransformation(), enabled = !busy, modifier = Modifier.fillMaxWidth())
-        OutlinedButton(onClick = { vm.settings { it.copy(sheetUrl = url.trim(), sheetKey = key.trim()) } }, enabled = !busy) { Text("Save sheet settings") }
+        OutlinedButton(onClick = { vm.saveSheet(url.trim(), key.trim()) }, enabled = !busy) { Text("Save sheet settings") }
     }
 }
 @Composable private fun Section(title: String, content: @Composable ColumnScope.() -> Unit) {

@@ -100,6 +100,10 @@ class BridgeViewModel(app: Application): AndroidViewModel(app) {
         }
         Scheduler.replace(app, store.read())
     }
+    /** Saving the sheet settings marks every measurement as unsent, so the next sync rebuilds the sheet from the selected profile. */
+    fun saveSheet(url: String, key: String) = operation {
+        store.update { it.copy(settings = it.settings.copy(sheetUrl = url, sheetKey = key), measurements = it.measurements.map { m -> m.copy(sheetSent = false) }, status = "Sheet settings saved. Sync now to resend your records.") }
+    }
     fun select(profile: String, importHistory: Boolean) = operation {
         store.update { it.copy(settings = it.settings.copy(profile = profile, since = if (importHistory) 0 else System.currentTimeMillis(), fullImport = importHistory, generation = UUID.randomUUID().toString()), completedWindow = null, status = "Profile selected. You can now sync or enable automatic synchronization.") }
         Scheduler.replace(app, store.read())
