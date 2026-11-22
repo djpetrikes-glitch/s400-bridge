@@ -19,7 +19,8 @@ object SheetSink {
         val url = state.settings.sheetUrl.trim(); val key = state.settings.sheetKey.trim()
         if (url.isEmpty() && key.isEmpty()) return@withContext null
         if (!url.startsWith("https://") || key.isEmpty()) return@withContext "Sheet: enter the web app URL and the scale key in Settings."
-        val pending = state.measurements.filter { !it.sheetSent }
+        // Only the profile selected in Settings: other people weighing on the same scale stay out of the sheet.
+        val pending = state.measurements.filter { !it.sheetSent && it.profile == state.settings.profile }
         if (pending.isEmpty()) return@withContext null
         val zone = ZoneId.systemDefault()
         var sent = 0
