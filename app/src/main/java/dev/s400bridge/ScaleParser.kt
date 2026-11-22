@@ -54,12 +54,13 @@ object ScaleParser {
                 d.text("bodyResData").takeIf { it.isNotBlank() && it != "null" }?.let { Json.parseToJsonElement(it).jsonObject }
             } else d
             if (source == 3) body?.let { fieldNames?.let { names -> collectNames("bodyResData", it, names) } }
-            if (sample != null && time >= sample.time) {
+            val fat = body?.text("bfp")?.toDoubleOrNull()?.takeIf { it.isFinite() && it > 0 && it <= 100 }
+            // Diagnostic: only records with a valid body-fat value, so a weight-only entry cannot hide the full one.
+            if (sample != null && fat != null && time >= sample.time) {
                 sample.time = time; sample.values.clear()
                 sample.values += numericSample("data", d)
                 if (source == 3 && body != null) sample.values += numericSample("bodyResData", body)
             }
-            val fat = body?.text("bfp")?.toDoubleOrNull()?.takeIf { it.isFinite() && it > 0 && it <= 100 }
             val id = stableId("$profile:${row.text("did")}:$time")
             measurements += Measurement(id, profile, time, kg, fat)
         }
