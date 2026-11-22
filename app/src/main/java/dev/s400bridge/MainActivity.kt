@@ -113,6 +113,7 @@ class MainActivity: ComponentActivity() {
                     }
                 } else {
                     AccountSettings(state, busy, vm)
+                    SheetSettings(state, busy, vm)
                     Section("Health Connect") {
                         Text(if (ready) "Weight and body fat write access granted." else "Allow weight and body fat to be written. No read access is requested.")
                         Button(onClick = {
@@ -227,6 +228,16 @@ class MainActivity: ComponentActivity() {
             }
             if (state.profiles.isEmpty()) Text("No profiles loaded. We will never guess a profile from a name or weight.")
         }
+    }
+}
+@Composable private fun SheetSettings(state: AppState, busy: Boolean, vm: BridgeViewModel) {
+    var url by remember(state.settings.sheetUrl) { mutableStateOf(state.settings.sheetUrl) }
+    var key by remember(state.settings.sheetKey) { mutableStateOf(state.settings.sheetKey) }
+    Section("Nutrition sheet") {
+        Text("Every measurement, with all its scale fields, is sent to your nutrition sheet on each sync. Stored encrypted on this phone. Health Connect is not affected.", style = MaterialTheme.typography.bodySmall)
+        OutlinedTextField(value = url, onValueChange = { url = it }, label = { Text("Web app URL (ends in /exec)") }, singleLine = true, enabled = !busy, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(value = key, onValueChange = { key = it }, label = { Text("Scale key") }, singleLine = true, visualTransformation = PasswordVisualTransformation(), enabled = !busy, modifier = Modifier.fillMaxWidth())
+        OutlinedButton(onClick = { vm.settings { it.copy(sheetUrl = url.trim(), sheetKey = key.trim()) } }, enabled = !busy) { Text("Save sheet settings") }
     }
 }
 @Composable private fun Section(title: String, content: @Composable ColumnScope.() -> Unit) {

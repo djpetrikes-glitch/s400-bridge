@@ -56,6 +56,7 @@ class SyncEngine(private val store: Store, private val sink: RecordSink) {
             }
             store.update { it.copy(settings = it.settings.copy(fullImport = false), fieldNames = (it.fieldNames + seenFields).distinct().sorted(), sample = if (latestSample.values.isNotEmpty()) latestSample.values.toMap() else it.sample, profiles = (it.profiles + history.first).distinctBy { p -> p.key }, measurements = mergeMeasurements(it.measurements, history.second), status = "Cloud checked. No new measurements to transfer.") }
             drain()
+            SheetSink.sendPending(store)?.let { msg -> store.update { it.copy(status = msg) } }
         } catch (_: WindowClosed) {
             store.update { it.copy(status = "Time window ended. Pending measurements will be retried in the next window.") }
         } catch (e: kotlinx.coroutines.CancellationException) { throw e

@@ -8,13 +8,16 @@ import kotlinx.serialization.Serializable
 @Serializable data class Profile(val key: String, val name: String)
 @Serializable data class Measurement(
     val id: String, val profile: String, val time: Long, val kg: Double, val fat: Double?,
-    val revision: Long = 1, val sentRevision: Long = 0
+    val revision: Long = 1, val sentRevision: Long = 0,
+    /** All numeric cloud fields of this record, e.g. data.bfp = 26.9. Sent to the nutrition sheet. */
+    val fields: Map<String, String> = emptyMap(), val sheetSent: Boolean = false
 )
 @Serializable data class Settings(
     val automatic: Boolean = false, val start: Int = 360, val end: Int = 450,
     val interval: Int = 15, val keepLooking: Boolean = false,
     val region: String = "de", val profile: String? = null, val since: Long = Long.MAX_VALUE,
-    val fullImport: Boolean = false, val generation: String = "initial"
+    val fullImport: Boolean = false, val generation: String = "initial",
+    val sheetUrl: String = "", val sheetKey: String = ""
 )
 @Serializable data class AppState(
     val settings: Settings = Settings(), val session: Session? = null,
@@ -61,7 +64,7 @@ fun mergeMeasurements(old: List<Measurement>, incoming: List<Measurement>): List
         val previous = merged[m.id]
         merged[m.id] = when {
             previous == null -> m
-            previous.kg == m.kg && previous.fat == m.fat -> previous
+            previous.kg == m.kg && previous.fat == m.fat -> if (previous.fields.isEmpty() && m.fields.isNotEmpty()) previous.copy(fields = m.fields) else previous
             else -> m.copy(revision = previous.revision + 1, sentRevision = previous.sentRevision)
         }
     }

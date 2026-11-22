@@ -62,7 +62,11 @@ object ScaleParser {
                 if (source == 3 && body != null) sample.values += numericSample("bodyResData", body)
             }
             val id = stableId("$profile:${row.text("did")}:$time")
-            measurements += Measurement(id, profile, time, kg, fat)
+            val recordFields = linkedMapOf<String, String>().apply {
+                putAll(numericSample("data", d))
+                if (source == 3 && body != null) putAll(numericSample("bodyResData", body))
+            }
+            measurements += Measurement(id, profile, time, kg, fat, fields = recordFields)
         }
         return profiles.values.toList() to measurements
     }
