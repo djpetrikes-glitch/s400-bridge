@@ -8,7 +8,16 @@ class VerificationRequired(val url: String): Exception("Xiaomi requires verifica
 
 object ScaleParser {
     const val MODEL = "yunmai.scales.ms104"
-    fun parse(items: JsonArray, region: String, owner: String): Pair<List<Profile>, List<Measurement>> {
+    /** Diagnostic only: adds the KEY NAMES (never values) of a JSON object, e.g. "data.weight", to [out]. */
+    internal fun collectNames(prefix: String, obj: JsonObject, out: MutableSet<String>, depth: Int = 0) {
+        obj.forEach { (key, value) ->
+            val name = "$prefix.$key"
+            if (out.size < MAX_FIELD_NAMES) out += name
+            if (value is JsonObject && depth < 2) collectNames(name, value, out, depth + 1)
+        }
+    }
+    private const val MAX_FIELD_NAMES = 200
+    fun parse(items: JsonArray, region: String, owner: String, fieldNames: MutableSet<String>? = null): Pair<List<Profile>, List<Measurement>> {
         val profiles = linkedMapOf<String, Profile>()
         val measurements = mutableListOf<Measurement>()
         items.forEach { item ->
@@ -18,6 +27,7 @@ object ScaleParser {
             val source = row.text("fromSource").toIntOrNull() ?: throw ProtocolFailure("Missing Xiaomi source format.")
             if (source !in 1..3) throw ProtocolFailure("Unsupported Xiaomi source format $source. No data was guessed.")
             val d = Json.parseToJsonElement(row.text("data")).jsonObject
+            fieldNames?.let { collectNames("data", d, it) }
             val user = d["user"] as? JsonObject
             // Never infer a person's identity from their name or weight.
             val account = row.text("accountId").ifBlank { user?.text("accountId").orEmpty() }
@@ -32,6 +42,7 @@ object ScaleParser {
             val body = if (source == 3) {
                 d.text("bodyResData").takeIf { it.isNotBlank() && it != "null" }?.let { Json.parseToJsonElement(it).jsonObject }
             } else d
+            if (source == 3) body?.let { fieldNames?.let { names -> collectNames("bodyResData", it, names) } }
             val fat = body?.text("bfp")?.toDoubleOrNull()?.takeIf { it.isFinite() && it > 0 && it <= 100 }
             val id = stableId("$profile:${row.text("did")}:$time")
             measurements += Measurement(id, profile, time, kg, fat)

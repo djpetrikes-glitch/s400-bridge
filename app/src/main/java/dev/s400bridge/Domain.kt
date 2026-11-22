@@ -20,6 +20,8 @@ import kotlinx.serialization.Serializable
     val settings: Settings = Settings(), val session: Session? = null,
     val profiles: List<Profile> = emptyList(), val measurements: List<Measurement> = emptyList(),
     val completedWindow: String? = null, val lastSync: Long? = null,
+    /** Diagnostic: names (never values) of the fields seen in cloud records. */
+    val fieldNames: List<String> = emptyList(),
     val status: String = "Connect your Xiaomi account to get started."
 )
 

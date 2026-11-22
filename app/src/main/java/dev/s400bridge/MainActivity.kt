@@ -138,6 +138,7 @@ class MainActivity: ComponentActivity() {
                         Text("Import all available history for the selected profile. Existing records from this installation are matched by stable IDs.")
                         OutlinedButton(onClick = vm::importHistory, enabled = !busy && ready && state.settings.profile != null) { Text("Import existing measurements") }
                         Text(state.status)
+                        if (state.fieldNames.isNotEmpty()) Text("Cloud fields (names only):\n" + state.fieldNames.joinToString("\n"), style = MaterialTheme.typography.bodySmall)
                         Text("Model: ${ScaleParser.MODEL}\nRegion: ${state.settings.region}\nApp: ${BuildConfig.VERSION_NAME}\nAndroid: ${android.os.Build.VERSION.RELEASE}", style = MaterialTheme.typography.bodySmall)
                     }
                 }
