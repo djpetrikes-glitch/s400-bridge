@@ -142,7 +142,7 @@ class XiaomiCloud(private val allowed: () -> Boolean = { true }) {
         if (!uid.matches(Regex("[0-9]+")) || pass.isBlank()) throw AuthFailure()
         return Session(uid, pass, result.text("ssecurity"), "userId=$uid; serviceToken=$token; yetAnotherServiceToken=$token")
     }
-    suspend fun history(session: Session, region: String, cutoff: Long = 0, fieldNames: MutableSet<String>? = null): Pair<List<Profile>, List<Measurement>> = withContext(Dispatchers.IO) {
+    suspend fun history(session: Session, region: String, cutoff: Long = 0, fieldNames: MutableSet<String>? = null, sample: LatestSample? = null): Pair<List<Profile>, List<Measurement>> = withContext(Dispatchers.IO) {
         require(region in listOf("de", "tw", "ru", "us", "sg", "i2"))
         val path = "/eco/common/scale/getUserDataByPage"
         val profiles = linkedMapOf<String, Profile>(); val records = linkedMapOf<String, Measurement>()
@@ -168,7 +168,7 @@ class XiaomiCloud(private val allowed: () -> Boolean = { true }) {
             if (code in listOf(-3, -6, -10000)) throw AuthFailure()
             if (code != 0) throw ProtocolFailure("Xiaomi history API returned code $code.")
             val page = envelope["result"] as? JsonArray ?: throw ProtocolFailure("Xiaomi history format changed: expected an array.")
-            val (p, m) = ScaleParser.parse(page, region, session.userId, fieldNames)
+            val (p, m) = ScaleParser.parse(page, region, session.userId, fieldNames, sample)
             p.forEach { profiles[it.key] = it }; m.forEach { records[it.id] = it }
             if (page.size < 20 || page.any { (it.jsonObject.text("createTime").toLongOrNull() ?: Long.MAX_VALUE) < cutoff }) return@withContext profiles.values.toList() to records.values.toList()
             val next = page.map { it.jsonObject.text("createTime").toLongOrNull() ?: throw ProtocolFailure("Missing pagination timestamp.") }.min()
