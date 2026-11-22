@@ -16,6 +16,12 @@ jobs:
         run: |
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-37" "build-tools;37.0.0" || true
+      # Keep the same debug signing key between builds, so each APK installs over the previous one.
+      - name: Restore debug signing key
+        uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: s400-debug-keystore-v1
       - name: Unit tests
         run: chmod +x gradlew && ./gradlew :app:testDebugUnitTest
       - name: Build debug APK
