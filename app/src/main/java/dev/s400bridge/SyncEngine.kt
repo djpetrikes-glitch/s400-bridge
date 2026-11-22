@@ -47,13 +47,14 @@ class SyncEngine(private val store: Store, private val sink: RecordSink) {
             drain()
             if (!manual && completed && !s.keepLooking) return@withLock
             val seenFields = linkedSetOf<String>()
+            val latestSample = LatestSample()
             val cutoff = if (s.fullImport) 0 else maxOf(s.since, initial.lastSync?.minus(Duration.ofDays(2).toMillis()) ?: s.since)
-            val history = try { cloud.history(session, s.region, cutoff, seenFields) } catch (_: AuthFailure) {
+            val history = try { cloud.history(session, s.region, cutoff, seenFields, latestSample) } catch (_: AuthFailure) {
                 session = cloud.refresh(session)
                 store.update { it.copy(session = session) }
-                cloud.history(session, s.region, cutoff, seenFields)
+                cloud.history(session, s.region, cutoff, seenFields, latestSample)
             }
-            store.update { it.copy(settings = it.settings.copy(fullImport = false), fieldNames = (it.fieldNames + seenFields).distinct().sorted(), profiles = (it.profiles + history.first).distinctBy { p -> p.key }, measurements = mergeMeasurements(it.measurements, history.second), status = "Cloud checked. No new measurements to transfer.") }
+            store.update { it.copy(settings = it.settings.copy(fullImport = false), fieldNames = (it.fieldNames + seenFields).distinct().sorted(), sample = if (latestSample.values.isNotEmpty()) latestSample.values.toMap() else it.sample, profiles = (it.profiles + history.first).distinctBy { p -> p.key }, measurements = mergeMeasurements(it.measurements, history.second), status = "Cloud checked. No new measurements to transfer.") }
             drain()
         } catch (_: WindowClosed) {
             store.update { it.copy(status = "Time window ended. Pending measurements will be retried in the next window.") }
