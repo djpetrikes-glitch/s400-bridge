@@ -17,7 +17,18 @@ object ScaleParser {
         }
     }
     private const val MAX_FIELD_NAMES = 200
-    fun parse(items: JsonArray, region: String, owner: String, fieldNames: MutableSet<String>? = null): Pair<List<Profile>, List<Measurement>> {
+    /** Diagnostic only: numeric values of the newest record, without identifiers or personal fields. */
+    private val SAMPLE_SKIP = setOf("duid", "miid", "uid", "accountId", "did", "idx", "time", "userType", "model", "fromSource", "user")
+    internal fun numericSample(prefix: String, obj: JsonObject): Map<String, String> {
+        val out = linkedMapOf<String, String>()
+        obj.forEach { (key, value) ->
+            if (key in SAMPLE_SKIP) return@forEach
+            val v = (value as? JsonPrimitive)?.contentOrNull ?: return@forEach
+            if (v.toDoubleOrNull() != null) out["$prefix.$key"] = v
+        }
+        return out
+    }
+    fun parse(items: JsonArray, region: String, owner: String, fieldNames: MutableSet<String>? = null, sample: LatestSample? = null): Pair<List<Profile>, List<Measurement>> {
         val profiles = linkedMapOf<String, Profile>()
         val measurements = mutableListOf<Measurement>()
         items.forEach { item ->
@@ -43,6 +54,11 @@ object ScaleParser {
                 d.text("bodyResData").takeIf { it.isNotBlank() && it != "null" }?.let { Json.parseToJsonElement(it).jsonObject }
             } else d
             if (source == 3) body?.let { fieldNames?.let { names -> collectNames("bodyResData", it, names) } }
+            if (sample != null && time >= sample.time) {
+                sample.time = time; sample.values.clear()
+                sample.values += numericSample("data", d)
+                if (source == 3 && body != null) sample.values += numericSample("bodyResData", body)
+            }
             val fat = body?.text("bfp")?.toDoubleOrNull()?.takeIf { it.isFinite() && it > 0 && it <= 100 }
             val id = stableId("$profile:${row.text("did")}:$time")
             measurements += Measurement(id, profile, time, kg, fat)
@@ -50,4 +66,6 @@ object ScaleParser {
         return profiles.values.toList() to measurements
     }
 }
+/** Newest record seen across all cloud pages; diagnostic only. */
+class LatestSample { var time = 0L; val values = linkedMapOf<String, String>() }
 fun JsonObject.text(key: String): String = (get(key) as? JsonPrimitive)?.contentOrNull.orEmpty()
