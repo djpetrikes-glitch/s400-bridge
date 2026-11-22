@@ -22,6 +22,8 @@ import kotlinx.serialization.Serializable
     val completedWindow: String? = null, val lastSync: Long? = null,
     /** Diagnostic: names (never values) of the fields seen in cloud records. */
     val fieldNames: List<String> = emptyList(),
+    /** Temporary verification: numeric values of the newest cloud record (shown on screen only). */
+    val sample: Map<String, String> = emptyMap(),
     val status: String = "Connect your Xiaomi account to get started."
 )
 
