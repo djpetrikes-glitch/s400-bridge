@@ -98,6 +98,12 @@ class ParserTest {
     }
     @Test(expected = ProtocolFailure::class) fun unknownSourceFailsClosed() { ScaleParser.parse(JsonArray(listOf(row(8, data()))), "de", "99") }
     @Test(expected = ProtocolFailure::class) fun missingIdentityFailsClosed() { ScaleParser.parse(JsonArray(listOf(row(1, data(), account = ""))), "de", "99") }
+    @Test fun collectsFieldNamesButNeverValues() {
+        val names = linkedSetOf<String>()
+        ScaleParser.parse(JsonArray(listOf(row(3, data(source = 3)))), "de", "99", names)
+        assertTrue("data.weight" in names); assertTrue("data.bodyResData" in names); assertTrue("bodyResData.bfp" in names); assertTrue("data.user.name" in names)
+        listOf("68.4", "25.6", "Alice", "1794290400000").forEach { v -> assertTrue(names.none { it.contains(v) }) }
+    }
     @Test fun originalType3TimeWinsOverCreateTime() {
         val d = JsonObject(data(source = 3) + ("time" to JsonPrimitive("1794200000000")))
         assertEquals(1_794_200_000_000L, ScaleParser.parse(JsonArray(listOf(row(3, d))), "de", "99").second.single().time)
